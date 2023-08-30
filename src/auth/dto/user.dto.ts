@@ -1,6 +1,10 @@
+import { IsNotEmpty, IsString } from "class-validator";
+
 export class UserDto {
-    readonly idUser: Number;
+    readonly id: string;
     readonly email: string;
+    @IsNotEmpty({ message: 'Password is required' })
+    @IsString()
     readonly password: string;
     readonly type: string;
 }

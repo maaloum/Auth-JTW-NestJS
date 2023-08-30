@@ -1,40 +1,61 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserDto } from '../dto/user.dto';
+import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User } from 'src/schemas/user.scema';
+import { ForgotPasswordDto } from '../dto/forgetpassword.dto';
+import { loginUpDto } from '../dto/login.dto';
 
 
 
 @Injectable()
 export class AuthRepository {
 
-    users = [
-        {
-            "idUser": 1,
-            "password": "John Doe",
-            "email": "ely cheick@gmail.com",
-            "type": "admin"
-        },
-        {
-            "idUser": 2,
-            "password": "John Doe",
-            "email": "ely@gmail.com",
-            "type": "user"
+    constructor(
+        private jwtService: JwtService,
+        @InjectModel(User.name)
+        private userModel: Model<User>,
 
-        },
-        {
-            "idUser": 3,
-            "password": "John Doe",
-            "email": "doe@gmail.com",
-            "type": "user"
-        }
-]
+    ){}
 
-    async findUserByEmail(email: string): Promise<UserDto> {
-        console.log('users', this.users)
-       const user: UserDto = this.users.find(user => user.email === email);
+    async findUserByEmail(email: string): Promise<User> {
+        const user = await this.userModel.findOne({email});
          if(!user) {
                 throw new UnauthorizedException('User not found');
             }
-        return user;
+        return user
     
 }
+
+async getUsers(): Promise<any> {
+    const users = await this.userModel.find();
+    return users;
+}
+
+async signUser(email: string): Promise<any> {
+    return this.jwtService.sign({email});
+}
+
+async getUser(id: Number): Promise<any> {
+    const user = await this.userModel.findById(id);
+    return user;
+}
+
+async updateUser(id: Number, user: UserDto): Promise<any> {
+    const updatedUser = await this.userModel.findByIdAndUpdate(id, user);
+    return updatedUser;
+}
+
+async updateUserPassword(
+    userId: string,
+    password: string,
+  ): Promise<User> {
+    return await this.userModel.findByIdAndUpdate(userId, { password }, { new: true });
+  }
+async deleteUser(id: Number): Promise<any> {
+    const user = await this.userModel.findByIdAndDelete(id);
+    return user;
+}
+
 }

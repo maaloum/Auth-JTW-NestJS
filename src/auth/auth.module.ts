@@ -6,8 +6,9 @@ import { UserSchema } from 'src/schemas/user.scema';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService, ConfigModule } from '@nestjs/config';
-import {config} from 'process';
+require("dotenv").config();
 import { AuthRepository } from './domain/auth.repository';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
@@ -18,14 +19,26 @@ import { AuthRepository } from './domain/auth.repository';
       useFactory: (config: ConfigService) => {
         return {
           secret: config.get(<string>'JWT_SECRET'),
-          signOptions: { 
-            expiresIn: config.get<string>('JWT_EXPIRATION_TIME'),
-          },
+          // signOptions: { 
+          //   expiresIn: config.get<string>('JWT_EXPIRATION_TIME'),
+          // },
         };
       },
 
     }),
-    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }])
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
+    MailerModule.forRoot({
+      transport: {
+        host: 'smtp.gmail.com',
+        // port: 587,
+        secure: false, // upgrade later with STARTTLS
+        auth: {
+          user: 'maaloumali1@gmail.com',
+          pass: 'YTsn7R.ZD@E3XMu',
+        },
+      },}),
+// or new PugAdapter() or new EjsAdapter()
+
     // JwtModule.register({
     //   secret: 'secret',}),
   ],
