@@ -1,5 +1,5 @@
 
-import { Controller, Post, Body, Get,  UseGuards, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get,  UseGuards, Param, Delete, Put, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserDto } from './dto/user.dto';
 import { AuthGuard } from './auth.guard';
@@ -22,7 +22,7 @@ export class AuthController {
     }
 
     @Post('signup')
-    async sugnUp(@Body() SignUpDto: SignUpDto): Promise<{token:string}>{
+    async signUp(@Body() SignUpDto: SignUpDto): Promise<{token:string}>{
         return this.authService.signUp(SignUpDto);
     }
 
@@ -42,6 +42,12 @@ export class AuthController {
         return this.authService.getUsers();
     }
 
+    @Delete('users')
+    async deleteUsers(): Promise<any> {
+        return this.authService.deleteUsers();
+    }
+
+
     @Get('users/:id')
     async getUser(@Param('id') id: Number): Promise<any> {
         return this.authService.getUser(id);
@@ -52,21 +58,23 @@ export class AuthController {
         return this.authService.updateUser(id, user);
     }
 
-    @Delete(':id')
+    @Delete('users/:id')
     async deleteUser(@Param('id') id: Number): Promise<any> {
         return this.authService.deleteUser(id);
     }
 
     @Get('test')
     @UseGuards(AuthGuard)
-    async test(@Body() user: UserDto): Promise<any>{
+    async test(@Body() user: UserDto, @Req() req: any): Promise<any>{
+
+        console.log(req.user)
         return this.authService.test(user);
     }
 
-    @Post('verify-otp')
-    // @UseGuards(AuthGuard('jwt')) // Protect the route with JWT authentication
+    @Get('verify-otp')
+    @UseGuards(AuthGuard) // Protect the route with JWT authentication
     async verifyOTP(@Body() loginDto: restPasswordDto) {
-      return await this.authService.verifyOtpRest(
+      return await this.authService.verifyOtpCode(
         loginDto.email,
         loginDto.otpCode,
       );

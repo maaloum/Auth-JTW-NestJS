@@ -19,6 +19,18 @@ export class AuthRepository {
 
     ){}
 
+
+    async createUser(user: UserDto): Promise<User> {
+        const {email} = user;
+        const newUser = await this.userModel.findOne({email});
+        if(newUser) {
+            throw new UnauthorizedException('User already exists');
+        }
+        const createdUser = new this.userModel(user);
+        await createdUser.save();
+    return createdUser;
+    }
+
     async findUserByEmail(email: string): Promise<User> {
         const user = await this.userModel.findOne({email});
          if(!user) {
@@ -30,6 +42,11 @@ export class AuthRepository {
 
 async getUsers(): Promise<any> {
     const users = await this.userModel.find();
+    return users;
+}
+
+async deleteUsers(): Promise<any> {
+    const users = await this.userModel.deleteMany();
     return users;
 }
 

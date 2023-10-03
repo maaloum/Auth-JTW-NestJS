@@ -1,11 +1,13 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { generateKey } from "crypto";
+import { generateKey } from "crypto"; 
+import { Document } from "mongoose";
 
 
 export enum roles  {
     ADMIN = 'administrator',
-    PROJECTMANAGER = 'project_manager',
-    USER = 'regular_user'
+    CONTRIBUTOR = 'contributor',
+    NGO = 'ngo',
+    REGULAR = 'regular_user'
 }
 
 
@@ -14,9 +16,9 @@ export enum roles  {
 })
 
 
-export class User {
-    @Prop( { required: true, default: generateKey} )
-    id: string;
+export class User extends Document {
+    // @Prop()
+    // id: string;
     @Prop({ required: true })
     name: string;
     @Prop({ required: true })
@@ -25,12 +27,14 @@ export class User {
     email: string;
     @Prop({ required: true })
     password: string;
-    @Prop({ required: true, enum: roles, default: roles.USER})
+    @Prop({ required: true, enum: roles, default: roles.REGULAR})
     type: roles;
-    @Prop({ required: true})
+    @Prop()
     country: string;
-    @Prop({ required: true})
+    @Prop()
     gender: string;
+    @Prop()
+    organization: string;
     @Prop()
     otp: string;
 }

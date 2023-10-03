@@ -17,6 +17,12 @@ import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class AuthService {
+    saveUser(arg0: { firstName: any; lastName: any; userName: any; provider: string; email: any; }) {
+      throw new Error('Method not implemented.');
+    }
+    generateTokens(user: any) {
+      throw new Error('Method not implemented.');
+    }
 
     constructor(
         @InjectModel(User.name)
@@ -35,7 +41,7 @@ export class AuthService {
     if(!await bcrypt.compare(password, user.password)) {
         throw new UnauthorizedException('Password is incorrect');
     }
-    const token = await this.authRepository.signUser(user.email);
+    const token = await this.authRepository.signUser(user._id);
 
     const data = {email: user.email,
         name: user.name,
@@ -45,14 +51,16 @@ export class AuthService {
 
     async signUp(signUpDto: SignUpDto ): Promise<any> {
 
-        const {name, email, password, userName, country, gender} = signUpDto;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new this.userModel({name, email, userName, country, gender, password: hashedPassword});
-
-        // assign jwt token to user
-        const token = await this.authRepository.signUser(user.email,);
-        await user.save();
-        return {user, token};
+        const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
+        const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false, alphabets: false });
+        console.log('otp', otp);
+        await this.sendEmailWithToken(signUpDto.email, otp);
+        const user = await this.authRepository.createUser({
+            ...signUpDto,
+            password: hashedPassword,
+            otp,
+        });
+        return {user};
     }
 
     async forgetPassword(email: string): Promise<any> {
@@ -77,7 +85,7 @@ export class AuthService {
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const updatedUser = await this.authRepository.updateUserPassword(
-            userFound.id,
+            userFound._id,
             hashedPassword,
         );
         return updatedUser;
@@ -85,6 +93,14 @@ export class AuthService {
     async getUsers(): Promise<any> {
         const users = await this.authRepository.getUsers();
         return users;
+    }
+
+    async deleteUsers(): Promise<any> {
+        const users = await this.authRepository.deleteUsers();
+        return {
+            "status": 200,
+            message: 'Users deleted successfully',
+        };
     }
 
     async getUser(id: Number): Promise<any> {
@@ -108,51 +124,40 @@ export class AuthService {
 
     async sendEmailWithToken(email: string, token: string): Promise<void> {
 
+        console.log("email", email)
 
-        const SENDER_EMAIL = "<maaloumali1@gmail.com>";
-        const RECIPIENT_EMAIL = email;
-        const client = new MailtrapClient({ token: token })
-        const sender = { name: "Mailtrap Test", email: SENDER_EMAIL };
-        client
-        .send({
-          from: sender,
-          to: [{ email: RECIPIENT_EMAIL }],
-          subject: "Hello from Mailtrap!",
-          text: "Welcome to Mailtrap Sending!",
-        })
-        .then(console.log)
-        .catch(console.error);
-        
-        // try {
-        //   // 1. Create a transporter with data stored in .env
-        //   const transporter = nodemailer.createTransport({
-        //     host: "smtp.gmail.com",
-        //     port: 587,
-        //     auth: {
-        //       user: "maaloumali1@gmail.com", // generated ethereal user
-        //       pass: "YTsn7R.ZD@E3XMu",
-        //     },
-        //   });
-        //   // 2. Define email options.
-        //   const mailOptions = {
-        //     from: 'maaloumali1@gmail.com',
-        //     to: email,
-        //     subject: 'Password Reset ',
-        //     text: `Your password reset is: ${token}`,
-        //   };
-        //   // 3. Send email.
-        //   await transporter.sendMail(mailOptions);
-        //   // 4. Handle error
-        // } catch (error) {
-        //     throw new UnauthorizedException('Error sending email');
-        // }
-      }
+        try {
+            // 1. Create a transporter with data stored in .env
+            const transporter = nodemailer.createTransport({
+                host: "sandbox.smtp.mailtrap.io",
+                port: 2525,
+                auth: {
+                    user: process.env.EMAIL_USERNAME,
+                    pass: process.env.EMAIL_PASSWORD,
+                }});
+            // 2. Define email options.
+            const mailOptions = {
+                from: "UBUNTO-AI",
+                to: email,
+                subject: 'Registration Token',
+                text: `Kindly enter the token: ${token}`,
+            };
+
+            // 3. Send email.
+            await transporter.sendMail(mailOptions);
+        } catch (error) {
+            // Handle error
+            console.log("error", error)
+            throw new UnauthorizedException('Error sending email');
+        }
+    }
+
 
     async verifyOtp(otp: string, submittedCode: string,): Promise<boolean> {
         return otp === submittedCode;
     }
     
-    async verifyOtpRest(email: string, optCode: string): Promise<object> {
+    async verifyOtpCode(email: string, optCode: string): Promise<object> {
         const user = await this.authRepository.findUserByEmail(email);
         if (!user) {
           throw new UnauthorizedException('User not found', undefined);

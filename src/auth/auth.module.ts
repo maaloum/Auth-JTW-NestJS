@@ -9,6 +9,7 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
 require("dotenv").config();
 import { AuthRepository } from './domain/auth.repository';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
     //   secret: 'secret',}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository]
+  providers: [AuthService, AuthRepository, JwtStrategy],
+  exports: [JwtStrategy, PassportModule],
 })
 export class AuthModule {}
